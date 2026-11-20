@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جوالي مول | Jawali Mall - منصة التجارة والجملة والموردين</title>
+    <!-- خطوط عربية عصرية -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                    },
+                    colors: {
+                        ali: {
+                            orange: '#FF6A00',
+                            darkOrange: '#E65100',
+                            lightOrange: '#FFF3EB',
+                            bg: '#F4F4F4',
+                            navy: '#1A2332',
+                            blue: '#0066CC',
+                            gold: '#D97706'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #F4F4F4;
+            color: #222222;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar { width: 7px; height: 7px; }
+        ::-webkit-scrollbar-track { background: #EAEAEA; }
+        ::-webkit-scrollbar-thumb { background: #CCCCCC; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FF6A00; }
+        .drag-active {
+            border-color: #FF6A00 !important;
+            background-color: #FFF3EB !important;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        
+        /* تنسيق الطباعة للفاتورة */
+        @media print {
+            body * { visibility: hidden; }
+            #invoice-printable-area, #invoice-printable-area * { visibility: visible; }
+            #invoice-printable-area { position: fixed; left: 0; top: 0; width: 100%; background: white; padding: 20px; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- نظام الإشعارات المنبثقة (Toast) -->
+    <div id="toast-container" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 max-w-sm w-full px-4 sm:px-0 pointer-events-none"></div>
+
+    <!-- ========================================================= -->
+    <!-- 1. الشريط العلوي (Alibaba Top Utility Bar)                -->
+    <!-- ========================================================= -->
+    <div class="bg-[#222222] text-gray-200 text-xs border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-ali-orange flex items-center gap-1.5">
+                    <i class="fa-solid fa-globe"></i>
+                    <span>جوالي مول - للتجارة والجملة (B2B & B2C)</span>
+                </span>
+                <span class="hidden md:inline text-gray-400">|</span>
+                <span class="hidden md:inline-flex items-center gap-1 text-gray-300">
+                    <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                    <span>حساب الدفع المعتمد: <strong class="text-white" dir="ltr">773629515</strong></span>
+                </span>
+            </div>
+
+            <div class="flex items-center gap-3 sm:gap-5">
+                <!-- محول العملة (ريال يمني / دولار) -->
+                <div class="flex items-center gap-1.5 bg-white/10 px-2.5 py-0.5 rounded">
+                    <span class="text-gray-300 hidden sm:inline">العملة:</span>
+                    <select id="currency-switcher" onchange="changeCurrency(this.value)" class="bg-transparent text-white font-bold focus:outline-none cursor-pointer">
+                        <option value="YER" class="text-gray-900">ريال يمني (ر.ي)</option>
+                        <option value="USD" class="text-gray-900">دولار أمريكي ($)</option>
+                    </select>
+                </div>
+
+                <!-- التبديل السريع بين المشتري ومركز البائعين -->
+                <button id="top-role-switch" onclick="toggleMainView()" class="text-ali-orange hover:text-amber-400 font-extrabold flex items-center gap-1.5 transition-colors">
+                    <i class="fa-solid fa-store"></i>
+                    <span id="top-role-text">مركز البائعين والموردين</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 2. هيدر علي بابا الرئيسي (Alibaba Main Header & Search)    -->
+    <!-- ========================================================= -->
+    <header class="bg-white sticky top-0 z-40 shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
+                
+                <!-- الشعار + أزرار الهاتف -->
+                <div class="w-full lg:w-auto flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchView('store')">
+                        <div class="w-11 h-11 rounded-xl bg-ali-orange flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+                            <i class="fa-solid fa-bag-shopping text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <h1 class="text-2xl font-black text-ali-orange tracking-tight leading-none">جوالي مول</h1>
+                                <span class="text-[10px] font-black bg-orange-100 text-ali-darkOrange px-1.5 py-0.5 rounded">PRO</span>
+                            </div>
+                            <span class="text-[11px] font-bold text-gray-500 tracking-wider uppercase">JawaliMall.com</span>
+                        </div>
+                    </div>
+
+                    <!-- أيقونات سريعة للهاتف -->
+                    <div class="flex lg:hidden items-center gap-2">
+                        <button onclick="switchView('seller')" class="px-3 py-2 rounded-lg bg-orange-50 text-ali-darkOrange text-xs font-extrabold border border-orange-200">
+                            <i class="fa-solid fa-gauge"></i> البائع
+                        </button>
+                        <button onclick="toggleCartDrawer(true)" class="relative p-2.5 rounded-lg bg-gray-100 text-gray-800">
+                            <i class="fa-solid fa-cart-shopping text-lg"></i>
+                            <span id="mobile-cart-badge" class="absolute -top-1 -right-1 bg-ali-orange text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- شريط البحث المركزي العريض بإطار برتقالي سميك (Alibaba Search Bar) -->
+                <div class="w-full lg:max-w-2xl flex-grow">
+                    <div class="flex items-center border-2 border-ali-orange rounded-full overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200">
+                        <select id="search-scope" class="bg-gray-50 text-gray-700 text-xs sm:text-sm font-bold px-3 sm:px-4 py-2.5 border-l border-gray-200 focus:outline-none cursor-pointer">
+                            <option value="products">المنتجات</option>
+                            <option value="suppliers">الموردون</option>
+                        </select>
+                        <input type="text" id="global-search-input" oninput="handleSearchInput()" placeholder="ابحث عن هواتف، إلكترونيات، ملابس، أجهزة جملة..." class="w-full px-4 py-2 text-sm text-gray-800 focus:outline-none">
+                        <button onclick="handleSearchInput()" class="bg-ali-orange hover:bg-ali-darkOrange text-white font-extrabold px-5 sm:px-7 py-2.5 text-sm flex items-center gap-2 transition-colors flex-shrink-0">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span class="hidden sm:inline">بحث</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- أيقونات الإجراءات (Desktop) -->
+                <div class="hidden lg:flex items-center gap-5">
+                    <button onclick="openRfqModal()" class="flex flex-col items-center text-gray-700 hover:text-ali-orange transition-colors group">
+                        <i class="fa-solid fa-file-signature text-xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold">طلب عرض سعر</span>
+                    </button>
+
+                    <button onclick="switchView('seller')" class="flex flex-col items-center text-gray-700 hover:text-ali-orange transition-colors group">
+                        <div class="relative">
+                            <i class="fa-solid fa-shop text-xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                            <span id="header-orders-dot" class="hidden absolute -top-1 -right-1.5 w-2.5 h-2.5 bg-red-600 rounded-full"></span>
+                        </div>
+                        <span class="text-xs font-bold">مركز البائعين</span>
+                    </button>
+
+                    <button onclick="toggleCartDrawer(true)" class="flex flex-col items-center text-gray-700 hover:text-ali-orange transition-colors relative group">
+                        <div class="relative">
+                            <i class="fa-solid fa-cart-shopping text-xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                            <span id="desktop-cart-badge" class="absolute -top-2 -right-2.5 bg-ali-orange text-white text-[11px] font-black px-1.5 min-w-[20px] h-5 rounded-full flex items-center justify-center shadow">0</span>
+                        </div>
+                        <span class="text-xs font-bold">سلة المشتريات</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================================= -->
+    <!-- المحتوى الرئيسي                                           -->
+    <!-- ========================================================= -->
+    <main class="flex-grow">
+
+        <!-- ===================================================== -->
+        <!-- الواجهة الأولى: واجهة المشتري (ALIBABA STOREFRONT)     -->
+        <!-- ===================================================== -->
+        <section id="view-store" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 animate-fade-in">
+            
+            <!-- قسم البطل ثلاثي الأعمدة (3-Column Alibaba Hero Section) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+                
+                <!-- العمود الأيمن: التصنيفات الرئيسية (Categories Sidebar) -->
+                <div class="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                    <div class="flex items-center justify-between pb-3 mb-2 border-b border-gray-100">
+                        <h2 class="font-black text-sm text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-bars text-ali-orange"></i>
+                            <span>أقسام الجملة والتجزئة</span>
+                        </h2>
+                        <button onclick="selectCategory('الكل')" class="text-[11px] font-bold text-ali-orange hover:underline">الكل</button>
+                    </div>
+                    <ul id="hero-categories-list" class="space-y-1">
+                        <!-- يتم توليد الأقسام هنا -->
+                    </ul>
+                </div>
+
+                <!-- العمود الأوسط: البانر الترويجي الرئيسي -->
+                <div class="lg:col-span-6 bg-gradient-to-br from-[#1A2332] via-[#263348] to-[#FF6A00] rounded-xl p-6 sm:p-8 text-white relative overflow-hidden flex flex-col justify-between shadow-sm">
+                    <div class="relative z-10">
+                        <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-amber-300 mb-3 border border-white/20">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>صفقات المصانع والموردين المباشرة في جوالي مول</span>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black leading-tight mb-3">
+                            تسوق بالجملة والمفرد بأفضل الأسعار التنافسية
+                        </h2>
+                        <p class="text-gray-200 text-xs sm:text-sm mb-5 max-w-md leading-relaxed">
+                            اطلب كمياتك التجارية مباشرة من الموردين الموثوقين مع حماية كاملة للمدفوعات عبر الرقم المعتمد 
+                            <span class="bg-black/30 text-amber-300 font-black px-2 py-0.5 rounded" dir="ltr">773629515</span>
+                        </p>
+                    </div>
+
+                    <div class="relative z-10 flex flex-wrap items-center gap-3">
+                        <button onclick="document.getElementById('products-section').scrollIntoView({behavior:'smooth'})" class="bg-ali-orange hover:bg-ali-darkOrange text-white font-extrabold px-5 py-2.5 rounded-lg text-xs sm:text-sm shadow-lg transition-all flex items-center gap-2">
+                            <span>استكشف العروض الآن</span>
+                            <i class="fa-solid fa-arrow-down"></i>
+                        </button>
+                        <button onclick="copyMerchantPhone()" class="bg-white text-gray-900 hover:bg-gray-100 font-extrabold px-4 py-2.5 rounded-lg text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                            <i class="fa-regular fa-copy text-ali-orange"></i>
+                            <span>حساب الدفع: 773629515</span>
+                        </button>
+                    </div>
+
+                    <!-- زخرفة خلفية -->
+                    <i class="fa-solid fa-boxes-packing absolute -bottom-6 -left-6 text-[170px] text-white/10 pointer-events-none"></i>
+                </div>
+
+                <!-- العمود الأيسر: بطاقة الترحيب وطلب عرض أسعار RFQ -->
+                <div class="lg:col-span-3 flex flex-col gap-4">
+                    <!-- بطاقة RFQ -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex-grow flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center gap-2.5 mb-2">
+                                <div class="w-9 h-9 rounded-full bg-orange-100 text-ali-orange flex items-center justify-center font-black">
+                                    <i class="fa-solid fa-bullhorn"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-black text-sm text-gray-900">طلب عرض أسعار (RFQ)</h3>
+                                    <p class="text-[11px] text-gray-500">احصل على تسعيرة مخصصة لكميتك</p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-3">
+                                هل تبحث عن كمية كبيرة أو مواصفات خاصة؟ أرسل طلبك وسيقوم الموردون بتقديم أفضل العروض.
+                            </p>
+                        </div>
+                        <button onclick="openRfqModal()" class="w-full py-2.5 bg-ali-orange hover:bg-ali-darkOrange text-white font-extrabold rounded-lg text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>نشر طلب عرض أسعار (RFQ)</span>
+                        </button>
+                    </div>
+
+                    <!-- بطاقة البائع السريعة -->
+                    <div class="bg-gradient-to-l from-amber-50 to-orange-50 rounded-xl border border-orange-200 p-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-black text-gray-900">هل لديك منتجات للبيع؟</span>
+                            <span class="text-[10px] font-bold bg-ali-orange text-white px-2 py-0.5 rounded">مجاني</span>
+                        </div>
+                        <p class="text-[11px] text-gray-600 mb-3">ارفع صور منتجاتك وحدد أسعار الجملة واستلم أرباحك على 773629515.</p>
+                        <button onclick="switchView('seller')" class="w-full py-2 bg-white hover:bg-orange-50 text-ali-darkOrange border border-ali-orange font-extrabold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-plus-circle"></i>
+                            <span>الدخول إلى لوحة تحكم البائع</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- شريط ميزات "ضمان التجارة في جوالي مول (Trade Assurance)" -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4 mb-8 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="flex items-center gap-3 p-2">
+                    <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl flex-shrink-0">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-xs sm:text-sm text-gray-900">ضمان التجارة Trade Assurance</h4>
+                        <p class="text-[11px] text-gray-500">حماية كاملة لمدفوعاتك حتى استلام البضاعة</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 p-2 border-t sm:border-t-0 sm:border-r border-gray-100">
+                    <div class="w-11 h-11 rounded-xl bg-blue-100 text-ali-blue flex items-center justify-center text-xl flex-shrink-0">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-xs sm:text-sm text-gray-900">موردون موثوقون Verified</h4>
+                        <p class="text-[11px] text-gray-500">تجار ومصانع معتمدة بجودة مضمونة</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 p-2 border-t lg:border-t-0 lg:border-r border-gray-100">
+                    <div class="w-11 h-11 rounded-xl bg-orange-100 text-ali-orange flex items-center justify-center text-xl flex-shrink-0">
+                        <i class="fa-solid fa-tags"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-xs sm:text-sm text-gray-900">أسعار الجملة المتدرجة</h4>
+                        <p class="text-[11px] text-gray-500">خصومات تلقائية كلما زادت كمية الطلب</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 p-2 border-t lg:border-t-0 sm:border-r border-gray-100">
+                    <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl flex-shrink-0">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-xs sm:text-sm text-gray-900">دفع محلي فوري وآمن</h4>
+                        <p class="text-[11px] text-gray-500">جوالي، كاش، محفظتي، الكريمي (773629515)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- شريط تصفية الأقسام السريع + عنوان القسم -->
+            <div id="products-section" class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-6 bg-ali-orange rounded-full"></span>
+                    <h3 class="text-lg sm:text-xl font-black text-gray-900">منتجات الجملة والتجزئة المختارة</h3>
+                    <span id="filtered-count-badge" class="text-xs font-bold bg-gray-200 text-gray-700 px-2.5 py-0.5 rounded-full">0 منتج</span>
+                </div>
+
+                <div id="category-pills" class="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full pb-1">
+                    <!-- أزرار التصفية -->
+                </div>
+            </div>
+
+            <!-- شبكة عرض المنتجات على طراز علي بابا -->
+            <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <!-- بطاقات المنتجات -->
+            </div>
+
+            <!-- حالة عدم وجود نتائج -->
+            <div id="empty-store-state" class="hidden text-center py-16 bg-white rounded-xl border border-gray-200">
+                <i class="fa-solid fa-box-open text-4xl text-gray-300 mb-3"></i>
+                <h3 class="text-base font-black text-gray-800 mb-1">لم يتم العثور على منتجات مطابقة</h3>
+                <p class="text-xs text-gray-500 mb-4">جرب تغيير كلمة البحث أو تصفح جميع الأقسام.</p>
+                <button onclick="resetFilters()" class="px-5 py-2 bg-ali-orange text-white rounded-lg text-xs font-extrabold hover:bg-ali-darkOrange">عرض كافة المنتجات</button>
+            </div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- الواجهة الثانية: مركز البائعين (ALIBABA SELLER CENTER) -->
+        <!-- ===================================================== -->
+        <section id="view-seller" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fade-in">
+            
+            <!-- شريط ترويسة مركز البائعين -->
+            <div class="bg-[#1A2332] text-white rounded-xl p-5 sm:p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="bg-ali-orange text-white text-[11px] font-black px-2.5 py-0.5 rounded">My Alibaba Seller Center</span>
+                        <span class="text-xs text-amber-400 font-bold"><i class="fa-solid fa-circle-check"></i> مورد موثوق</span>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-black">مركز البائعين والموردين - جوالي مول</h2>
+                    <p class="text-xs text-gray-300 mt-1">أدر كتالوج منتجاتك، ارفع الصور المتعددة، حدد أسعار الجملة المتدرجة، وتابع الطلبات وعروض الأسعار.</p>
+                </div>
+
+                <div class="bg-white/10 border border-white/15 rounded-xl px-4 py-3 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-ali-orange text-white flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-gray-300 block">حساب استلام المدفوعات المربوط:</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-amber-400 tracking-wider" dir="ltr">773629515</span>
+                            <button onclick="copyMerchantPhone()" class="bg-white text-gray-900 hover:bg-gray-100 text-[11px] font-black px-2 py-0.5 rounded">نسخ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تبويبات مركز البائعين -->
+            <div class="bg-white rounded-xl border border-gray-200 px-4 mb-6 flex gap-2 overflow-x-auto no-scrollbar shadow-sm">
+                <button id="tab-btn-products" onclick="switchSellerTab('products')" class="px-4 py-3.5 font-black text-xs sm:text-sm border-b-2 border-ali-orange text-ali-orange whitespace-nowrap flex items-center gap-2">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>إدارة المنتجات ورفع الصور</span>
+                </button>
+                <button id="tab-btn-orders" onclick="switchSellerTab('orders')" class="px-4 py-3.5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-gray-600 hover:text-gray-900 whitespace-nowrap flex items-center gap-2">
+                    <i class="fa-solid fa-truck-fast"></i>
+                    <span>الطلبات الواردة</span>
+                    <span id="seller-orders-badge" class="bg-ali-orange text-white text-[11px] font-black px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <button id="tab-btn-rfqs" onclick="switchSellerTab('rfqs')" class="px-4 py-3.5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-gray-600 hover:text-gray-900 whitespace-nowrap flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>طلبات عروض الأسعار (RFQs)</span>
+                    <span id="seller-rfqs-badge" class="bg-blue-600 text-white text-[11px] font-black px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <button id="tab-btn-payments" onclick="switchSellerTab('payments')" class="px-4 py-3.5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-gray-600 hover:text-gray-900 whitespace-nowrap flex items-center gap-2">
+                    <i class="fa-solid fa-credit-card"></i>
+                    <span>إعدادات الدفع (773629515)</span>
+                </button>
+            </div>
+
+            <!-- التبويب 1: إضافة وتعديل المنتجات ورفع الصور -->
+            <div id="seller-tab-products" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- نموذج إضافة/تعديل منتج -->
+                <div class="lg:col-span-5">
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm sticky top-24">
+                        <div class="flex justify-between items-center pb-3 mb-4 border-b border-gray-100">
+                            <h3 id="form-title" class="font-black text-base text-gray-900 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-plus text-ali-orange"></i>
+                                <span>إضافة منتج جديد للكتالوج</span>
+                            </h3>
+                            <button id="cancel-edit-btn" onclick="resetProductForm()" class="hidden text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded hover:bg-red-100">إلغاء التعديل</button>
+                        </div>
+
+                        <form id="product-form" onsubmit="handleProductSubmit(event)" class="space-y-4">
+                            <input type="hidden" id="edit-product-id" value="">
+
+                            <!-- منطقة رفع الصور المتعددة -->
+                            <div>
+                                <div class="flex justify-between items-center mb-1.5">
+                                    <label class="text-xs font-extrabold text-gray-800">صور المنتج (يدعم السحب والإفلات وتعدد الصور) <span class="text-red-500">*</span></label>
+                                    <span id="uploaded-count-label" class="text-xs font-bold text-ali-orange">0 صور</span>
+                                </div>
+                                
+                                <div id="drop-zone" onclick="document.getElementById('image-file-input').click()" class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:border-ali-orange hover:bg-orange-50/40 transition-all">
+                                    <input type="file" id="image-file-input" accept="image/*" multiple class="hidden" onchange="handleFilesSelected(this.files)">
+                                    <i class="fa-solid fa-cloud-arrow-up text-2xl text-ali-orange mb-1.5"></i>
+                                    <p class="text-xs font-extrabold text-gray-800">اضغط لاختيار الصور أو اسحبها وأفلتها هنا</p>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">يتم ضغط الصور تلقائياً وحفظها لضمان سرعة العرض</p>
+                                </div>
+
+                                <!-- معاينة الصور المرفوعة -->
+                                <div id="image-previews-container" class="grid grid-cols-4 gap-2 mt-2.5"></div>
+                            </div>
+
+                            <!-- اسم المنتج والتصنيف -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">اسم المنتج <span class="text-red-500">*</span></label>
+                                    <input type="text" id="prod-name" required placeholder="مثال: هاتف آيفون 15 برو ماكس" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs sm:text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">التصنيف الرئيسي <span class="text-red-500">*</span></label>
+                                    <select id="prod-category" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs sm:text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                                        <option value="إلكترونيات وهواتف">إلكترونيات وهواتف</option>
+                                        <option value="ملابس وأزياء">ملابس وأزياء</option>
+                                        <option value="أجهزة منزلية">أجهزة منزلية</option>
+                                        <option value="معدات صناعية">معدات صناعية</option>
+                                        <option value="مستلزمات طبية">مستلزمات طبية</option>
+                                        <option value="مواد غذائية وجملة">مواد غذائية وجملة</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- أسعار الجملة المتدرجة (Tiered Pricing) -->
+                            <div class="bg-orange-50/70 border border-orange-200 rounded-xl p-3">
+                                <label class="block text-xs font-black text-ali-darkOrange mb-2">
+                                    <i class="fa-solid fa-layer-group ml-1"></i> أسعار الجملة المتدرجة (بالريال اليمني ر.ي)
+                                </label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <span class="block text-[10px] font-bold text-gray-600 mb-1">1 - 9 قطع (المفرد) *</span>
+                                        <input type="number" id="prod-price-1" required min="1" step="any" placeholder="50000" class="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold focus:outline-none focus:border-ali-orange">
+                                    </div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold text-gray-600 mb-1">10 - 49 قطعة *</span>
+                                        <input type="number" id="prod-price-10" required min="1" step="any" placeholder="45000" class="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold focus:outline-none focus:border-ali-orange">
+                                    </div>
+                                    <div>
+                                        <span class="block text-[10px] font-bold text-gray-600 mb-1">50+ قطعة (جملة) *</span>
+                                        <input type="number" id="prod-price-50" required min="1" step="any" placeholder="40000" class="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold focus:outline-none focus:border-ali-orange">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- الحد الأدنى للطلب MOQ + اسم المورد -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">الحد الأدنى للطلب (MOQ) *</label>
+                                    <input type="number" id="prod-moq" required min="1" value="1" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs sm:text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">اسم المتجر / المورد *</label>
+                                    <input type="text" id="prod-supplier" required value="مؤسسة جوالي مول للتجارة" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs sm:text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                                </div>
+                            </div>
+
+                            <!-- المواصفات والوصف -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">المواصفات الفنية وتفاصيل التغليف</label>
+                                <textarea id="prod-desc" rows="2" placeholder="اكتب المواصفات، الضمان، خيارات الشحن والتغليف..." class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs sm:text-sm focus:bg-white focus:outline-none focus:border-ali-orange"></textarea>
+                            </div>
+
+                            <button type="submit" id="submit-product-btn" class="w-full py-3 bg-ali-orange hover:bg-ali-darkOrange text-white font-extrabold rounded-xl text-sm shadow transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-check-circle"></i>
+                                <span>نشر المنتج في جوالي مول</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- قائمة منتجات البائع الحالية -->
+                <div class="lg:col-span-7">
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                        <div class="flex justify-between items-center pb-3 mb-4 border-b border-gray-100">
+                            <h3 class="font-black text-base text-gray-900">كتالوج المنتجات المنشورة (<span id="seller-products-count">0</span>)</h3>
+                            <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                                <i class="fa-solid fa-database ml-1"></i> محفوظ محلياً
+                            </span>
+                        </div>
+                        <div id="seller-products-list" class="space-y-3">
+                            <!-- قائمة المنتجات -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- التبويب 2: الطلبات الواردة وتحديث حالتها -->
+            <div id="seller-tab-orders" class="hidden">
+                <div class="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 shadow-sm">
+                    <div class="pb-4 mb-4 border-b border-gray-100">
+                        <h3 class="font-black text-lg text-gray-900">إدارة الطلبات الواردة وسندات التحويل</h3>
+                        <p class="text-xs text-gray-500">راجع الحوالات المحولة إلى الرقم 773629515 وقم بتحديث حالة كل طلب (قيد المراجعة، تم التأكيد، تم الشحن، مكتمل).</p>
+                    </div>
+                    <div id="seller-orders-list" class="space-y-4">
+                        <!-- قائمة الطلبات -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- التبويب 3: طلبات عروض الأسعار (RFQs) -->
+            <div id="seller-tab-rfqs" class="hidden">
+                <div class="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 shadow-sm">
+                    <div class="pb-4 mb-4 border-b border-gray-100">
+                        <h3 class="font-black text-lg text-gray-900">طلبات عروض الأسعار المخصصة (RFQs)</h3>
+                        <p class="text-xs text-gray-500">طلبات الجملة والكميات الخاصة المرسلة من المشترين عبر جوالي مول.</p>
+                    </div>
+                    <div id="seller-rfqs-list" class="space-y-4">
+                        <!-- قائمة طلبات عروض الأسعار -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- التبويب 4: إعدادات الدفع والحسابات المالية -->
+            <div id="seller-tab-payments" class="hidden">
+                <div class="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 shadow-sm">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 mb-6 border-b border-gray-100">
+                        <div>
+                            <h3 class="font-black text-lg text-gray-900">إعدادات الدفع والمحافظ الإلكترونية المعتمدة</h3>
+                            <p class="text-xs text-gray-500 mt-1">جميع المحافظ اليمنية أدناه مربوطة بالرقم الموحد للمتجر لاستقبال مدفوعات العملاء.</p>
+                        </div>
+                        <div class="bg-[#1A2332] text-white px-4 py-3 rounded-xl flex items-center gap-3">
+                            <div>
+                                <span class="text-[10px] text-amber-400 font-bold block">رقم الحساب المعتمد</span>
+                                <span class="text-lg font-black tracking-wider" dir="ltr">773629515</span>
+                            </div>
+                            <button onclick="copyMerchantPhone()" class="bg-ali-orange hover:bg-ali-darkOrange text-white text-xs font-extrabold px-3 py-1.5 rounded-lg">نسخ</button>
+                        </div>
+                    </div>
+
+                    <div id="wallets-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- بطاقات المحافظ -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========================================================= -->
+    <!-- نافذة تفاصيل المنتج (Alibaba Product Detail Modal)        -->
+    <!-- ========================================================= -->
+    <div id="product-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl animate-fade-in max-h-[92vh] flex flex-col">
+            <div class="px-6 py-3.5 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="bg-amber-100 text-amber-800 text-xs font-black px-2.5 py-0.5 rounded flex items-center gap-1">
+                        <i class="fa-solid fa-shield-halved"></i> ضمان التجارة
+                    </span>
+                    <span id="modal-prod-category" class="text-xs font-bold text-gray-500">التصنيف</span>
+                </div>
+                <button onclick="closeProductModal()" class="w-8 h-8 rounded-full bg-white border border-gray-200 hover:bg-gray-100 flex items-center justify-center text-gray-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-12 gap-6">
+                <!-- معرض الصور -->
+                <div class="md:col-span-5">
+                    <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200 mb-3">
+                        <img id="modal-main-img" src="" class="w-full h-full object-cover">
+                    </div>
+                    <div id="modal-thumbnails" class="flex gap-2 overflow-x-auto pb-1"></div>
+                </div>
+
+                <!-- تفاصيل الأسعار المتدرجة والكمية -->
+                <div class="md:col-span-7 flex flex-col justify-between">
+                    <div>
+                        <h3 id="modal-prod-name" class="text-xl font-black text-gray-900 mb-2"></h3>
+                        
+                        <!-- معلومات المورد -->
+                        <div class="flex flex-wrap items-center gap-2 text-xs mb-4 pb-3 border-b border-gray-100">
+                            <span id="modal-prod-supplier" class="font-bold text-gray-700"></span>
+                            <span class="bg-blue-50 text-ali-blue font-extrabold px-2 py-0.5 rounded border border-blue-200">
+                                <i class="fa-solid fa-circle-check"></i> مورد موثوق
+                            </span>
+                            <span id="modal-prod-moq" class="text-gray-500 font-bold"></span>
+                        </div>
+
+                        <!-- جدول أسعار الجملة المتدرجة -->
+                        <div class="bg-[#FFF8F3] border border-orange-200 rounded-xl p-4 mb-4">
+                            <span class="text-xs font-black text-ali-darkOrange block mb-2">أسعار الجملة حسب الكمية:</span>
+                            <div class="grid grid-cols-3 gap-3 text-center">
+                                <div id="tier-box-1" class="bg-white p-2.5 rounded-lg border border-orange-200">
+                                    <span class="text-[11px] text-gray-500 block">1 - 9 قطع</span>
+                                    <span id="modal-tier-1" class="text-sm sm:text-base font-black text-gray-900"></span>
+                                </div>
+                                <div id="tier-box-10" class="bg-white p-2.5 rounded-lg border border-orange-200">
+                                    <span class="text-[11px] text-gray-500 block">10 - 49 قطعة</span>
+                                    <span id="modal-tier-10" class="text-sm sm:text-base font-black text-ali-orange"></span>
+                                </div>
+                                <div id="tier-box-50" class="bg-white p-2.5 rounded-lg border border-orange-200">
+                                    <span class="text-[11px] text-gray-500 block">50+ قطعة</span>
+                                    <span id="modal-tier-50" class="text-sm sm:text-base font-black text-emerald-700"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- اختيار الكمية وحساب السعر الفوري -->
+                        <div class="flex flex-wrap items-center justify-between gap-4 bg-gray-50 p-3.5 rounded-xl border border-gray-200 mb-4">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-extrabold text-gray-700">الكمية المطلوبة:</span>
+                                <div class="flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden">
+                                    <button type="button" onclick="adjustModalQty(-1)" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 font-black text-sm">-</button>
+                                    <input type="number" id="modal-qty-input" value="1" min="1" oninput="updateModalPriceCalculation()" class="w-16 text-center text-sm font-black focus:outline-none">
+                                    <button type="button" onclick="adjustModalQty(1)" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 font-black text-sm">+</button>
+                                </div>
+                            </div>
+                            <div class="text-left">
+                                <span class="text-[11px] text-gray-500 block">سعر القطعة المطبق / الإجمالي:</span>
+                                <span id="modal-calculated-total" class="text-base font-black text-ali-orange"></span>
+                            </div>
+                        </div>
+
+                        <p class="text-xs font-extrabold text-gray-500 mb-1">المواصفات الفنية:</p>
+                        <p id="modal-prod-desc" class="text-xs sm:text-sm text-gray-600 leading-relaxed"></p>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button id="modal-add-cart-btn" class="py-3 bg-ali-orange hover:bg-ali-darkOrange text-white font-extrabold rounded-xl text-sm shadow transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-cart-plus"></i>
+                            <span>أضف الكمية إلى السلة</span>
+                        </button>
+                        <button id="modal-rfq-btn" class="py-3 bg-white hover:bg-orange-50 text-ali-darkOrange border-2 border-ali-orange font-extrabold rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-file-signature"></i>
+                            <span>اطلب عرض سعر خاص</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- نافذة طلب عرض أسعار (Alibaba RFQ Modal)                   -->
+    <!-- ========================================================= -->
+    <div id="rfq-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl animate-fade-in">
+            <div class="px-6 py-4 bg-[#1A2332] text-white flex justify-between items-center">
+                <div>
+                    <h3 class="font-black text-base flex items-center gap-2">
+                        <i class="fa-solid fa-file-signature text-ali-orange"></i>
+                        <span>نشر طلب عرض أسعار (RFQ)</span>
+                    </h3>
+                    <p class="text-[11px] text-gray-300">أخبر الموردين بما تحتاج وسيتواصلون معك بأفضل سعر</p>
+                </div>
+                <button onclick="closeRfqModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="submitRfq(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">اسم المنتج أو البضاعة المطلوبة *</label>
+                    <input type="text" id="rfq-product-name" required placeholder="مثال: 100 شاحن سريع أو هواتف سامسونج جملة" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">الكمية المطلوبة *</label>
+                        <input type="number" id="rfq-quantity" required min="1" value="50" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">السعر المستهدف للقطعة (اختياري)</label>
+                        <input type="text" id="rfq-target-price" placeholder="مثال: 35000 ر.ي" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">اسمك / اسم شركتك *</label>
+                        <input type="text" id="rfq-buyer-name" required placeholder="الاسم الكامل" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">رقم الهاتف / واتساب *</label>
+                        <input type="tel" id="rfq-buyer-phone" required placeholder="77XXXXXXX" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">تفاصيل إضافية للموردين</label>
+                    <textarea id="rfq-notes" rows="2" placeholder="حدد الألوان، المواصفات، أو مدينة التسليم..." class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-ali-orange"></textarea>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-ali-orange hover:bg-ali-darkOrange text-white font-extrabold rounded-xl text-sm shadow transition-all">
+                    إرسال طلب عرض الأسعار الآن
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- درج سلة التسوق الجانبي (Smart Wholesale Cart Drawer)      -->
+    <!-- ========================================================= -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-xs flex justify-end">
+        <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col justify-between animate-fade-in">
+            <div class="p-5 bg-[#1A2332] text-white flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-cart-shopping text-ali-orange text-xl"></i>
+                    <div>
+                        <h3 class="font-black text-base">سلة مشتريات الجملة والتجزئة</h3>
+                        <p class="text-[11px] text-gray-300">يتم احتساب خصم الجملة تلقائياً حسب الكمية</p>
+                    </div>
+                </div>
+                <button onclick="toggleCartDrawer(false)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="cart-items-container" class="flex-grow overflow-y-auto p-5 space-y-3">
+                <!-- عناصر السلة -->
+            </div>
+
+            <div id="cart-footer" class="p-5 border-t border-gray-200 bg-gray-50">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-bold text-gray-600">الإجمالي النهائي:</span>
+                    <span id="cart-total-display" class="text-xl font-black text-ali-orange">0</span>
+                </div>
+                <button onclick="openCheckoutModal()" class="w-full py-3.5 bg-ali-orange hover:bg-ali-darkOrange text-white font-black rounded-xl text-sm shadow transition-all flex items-center justify-center gap-2">
+                    <span>متابعة الدفع عبر المحافظ اليمنية</span>
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- نافذة الدفع وإصدار الفاتورة (Checkout & Invoice Modal)    -->
+    <!-- ========================================================= -->
+    <div id="checkout-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl max-h-[92vh] flex flex-col animate-fade-in">
+            <div class="px-6 py-4 bg-[#1A2332] text-white flex justify-between items-center">
+                <h3 class="font-black text-base flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-ali-orange"></i>
+                    <span>إتمام الدفع الآمن - جوالي مول</span>
+                </h3>
+                <button onclick="closeCheckoutModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="submitOrder(event)" class="p-6 overflow-y-auto space-y-4">
+                <!-- صندوق حساب الدفع الموحد 773629515 -->
+                <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-extrabold text-ali-darkOrange">حساب الدفع المعتمد لـ جوالي مول:</span>
+                        <span class="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">ضمان التجارة مفعّل</span>
+                    </div>
+                    <div class="flex items-center justify-between bg-white px-3.5 py-2.5 rounded-lg border border-orange-200">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block">رقم المحفظة / الحساب الموحد</span>
+                            <span class="text-xl font-black text-gray-900 tracking-wider" dir="ltr">773629515</span>
+                        </div>
+                        <button type="button" onclick="copyMerchantPhone()" class="px-3 py-1.5 bg-ali-orange hover:bg-ali-darkOrange text-white text-xs font-extrabold rounded-lg flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>نسخ الرقم</span>
+                        </button>
+                    </div>
+                    <div class="mt-2.5 pt-2 border-t border-orange-200/70 flex justify-between items-center text-xs font-bold">
+                        <span class="text-gray-700">المبلغ المطلوب تحويله:</span>
+                        <span id="checkout-total-amount" class="text-base font-black text-ali-orange">0</span>
+                    </div>
+                </div>
+
+                <!-- اختيار المحفظة -->
+                <div>
+                    <label class="block text-xs font-extrabold text-gray-800 mb-2">1. اختر المحفظة الإلكترونية التي قمت بالتحويل منها *</label>
+                    <div id="checkout-wallets-list" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                </div>
+
+                <!-- بيانات المشتري -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">2. اسم المستلم / المتجر *</label>
+                        <input type="text" id="buyer-name" required placeholder="الاسم الكامل" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">3. رقم الهاتف للتواصل *</label>
+                        <input type="tel" id="buyer-phone" required placeholder="77XXXXXXX" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                    </div>
+                </div>
+
+                <!-- رقم العملية + إرفاق السند -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">4. رقم العملية / المرجع *</label>
+                        <input type="text" id="transfer-ref" required placeholder="رقم الحوالة من الإشعار" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-ali-orange">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">5. صورة سند التحويل (اختياري)</label>
+                        <label class="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-gray-50 border border-dashed border-gray-300 rounded-xl text-xs font-bold text-gray-600 cursor-pointer hover:bg-gray-100">
+                            <i class="fa-solid fa-receipt text-ali-orange"></i>
+                            <span id="receipt-file-label" class="truncate">إرفاق صورة السند</span>
+                            <input type="file" id="receipt-file-input" accept="image/*" class="hidden" onchange="handleReceiptUpload(this.files)">
+                        </label>
+                    </div>
+                </div>
+
+                <div id="receipt-preview-box" class="hidden items-center justify-between bg-emerald-50 p-2 rounded-xl border border-emerald-200">
+                    <div class="flex items-center gap-2">
+                        <img id="receipt-preview-img" src="" class="w-10 h-10 rounded-lg object-cover border">
+                        <span class="text-xs font-bold text-emerald-800">تم إرفاق إيصال التحويل</span>
+                    </div>
+                    <button type="button" onclick="clearReceiptUpload()" class="text-red-600 text-xs font-bold px-2">حذف</button>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-ali-orange hover:bg-ali-darkOrange text-white font-extrabold rounded-xl text-sm shadow transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>تأكيد الطلب وإصدار الفاتورة الرسمية</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- نافذة الفاتورة الرسمية القابلة للطباعة (Invoice Modal)     -->
+    <!-- ========================================================= -->
+    <div id="invoice-modal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl animate-fade-in">
+            <div id="invoice-printable-area" class="p-6 space-y-4">
+                <div class="flex justify-between items-start border-b border-gray-200 pb-4">
+                    <div>
+                        <h3 class="text-xl font-black text-ali-orange">جوالي مول | Jawali Mall</h3>
+                        <p class="text-xs text-gray-500">فاتورة شراء رسمية - ضمان التجارة</p>
+                    </div>
+                    <div class="text-left">
+                        <span id="inv-order-id" class="font-black text-sm text-gray-900 block"></span>
+                        <span id="inv-date" class="text-[11px] text-gray-500"></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs bg-gray-50 p-3 rounded-xl border border-gray-200">
+                    <div>
+                        <span class="text-gray-400 block">المشتري:</span>
+                        <strong id="inv-buyer-name" class="text-gray-900"></strong>
+                        <span id="inv-buyer-phone" class="block text-gray-600" dir="ltr"></span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400 block">بيانات الدفع:</span>
+                        <strong id="inv-wallet" class="text-ali-darkOrange"></strong>
+                        <span class="block text-gray-600">إلى: <strong dir="ltr">773629515</strong></span>
+                        <span class="block text-gray-600">مرجع: <strong id="inv-ref"></strong></span>
+                    </div>
+                </div>
+
+                <div>
+                    <table class="w-full text-xs text-right">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th class="p-2 rounded-r-lg">المنتج</th>
+                                <th class="p-2 text-center">الكمية</th>
+                                <th class="p-2 text-left rounded-l-lg">الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inv-items-body" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-between items-center pt-3 border-t border-gray-200">
+                    <span class="font-bold text-sm text-gray-700">الإجمالي المدفوع:</span>
+                    <span id="inv-total" class="text-lg font-black text-ali-orange"></span>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
+                <button onclick="window.print()" class="flex-1 py-2.5 bg-[#1A2332] hover:bg-gray-800 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print"></i>
+                    <span>طباعة الفاتورة</span>
+                </button>
+                <button onclick="document.getElementById('invoice-modal').classList.add('hidden')" class="flex-1 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-extrabold rounded-xl text-xs">
+                    إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- تذييل الصفحة (Alibaba Footer)                             -->
+    <!-- ========================================================= -->
+    <footer class="bg-[#1A2332] text-gray-300 mt-14 py-10 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-ali-orange text-white flex items-center justify-center">
+                    <i class="fa-solid fa-bag-shopping text-xl"></i>
+                </div>
+                <div>
+                    <h4 class="text-lg font-black text-white">جوالي مول | Jawali Mall</h4>
+                    <p class="text-xs text-gray-400">منصة التجارة والجملة والموردين الموثوقين</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-2 text-xs">
+                <span class="bg-white/10 px-3 py-1 rounded">جوالي Jawali</span>
+                <span class="bg-white/10 px-3 py-1 rounded">كاش Cash</span>
+                <span class="bg-white/10 px-3 py-1 rounded">محفظتي Mahfazati</span>
+                <span class="bg-white/10 px-3 py-1 rounded">ون كاش OneCash</span>
+                <span class="bg-white/10 px-3 py-1 rounded">فلوسك Floosak</span>
+                <span class="bg-white/10 px-3 py-1 rounded">بنك الكريمي</span>
+            </div>
+
+            <div class="text-xs text-center md:text-left">
+                <span class="text-gray-400 block">حساب الدفع الموحد المعتمد:</span>
+                <span class="text-base font-black text-ali-orange tracking-wider" dir="ltr">773629515</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================================= -->
+    <!-- المنطق البرمجي الكامل (JavaScript)                        -->
+    <!-- ========================================================= -->
+    <script>
+        const MERCHANT_PHONE = "773629515";
+        const USD_EXCHANGE_RATE = 535; // سعر الصرف التحويلي التقريبي للعرض بالريال أو الدولار
+        const STORAGE_KEYS = {
+            PRODUCTS: 'jawali_alibaba_products_v1',
+            WALLETS: 'jawali_alibaba_wallets_v1',
+            CART: 'jawali_alibaba_cart_v1',
+            ORDERS: 'jawali_alibaba_orders_v1',
+            RFQS: 'jawali_alibaba_rfqs_v1'
+        };
+
+        const CATEGORIES_DATA = [
+            { name: 'إلكترونيات وهواتف', icon: 'fa-mobile-screen-button' },
+            { name: 'ملابس وأزياء', icon: 'fa-shirt' },
+            { name: 'أجهزة منزلية', icon: 'fa-blender' },
+            { name: 'معدات صناعية', icon: 'fa-gears' },
+            { name: 'مستلزمات طبية', icon: 'fa-kit-medical' },
+            { name: 'مواد غذائية وجملة', icon: 'fa-boxes-stacked' }
+        ];
+
+        // توليد صور SVG احترافية عالية الدقة للمنتجات الافتراضية
+        function createProductArt(title, subtitle, c1, c2, emoji) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+                <defs>
+                    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="${c1}"/>
+                        <stop offset="100%" stop-color="${c2}"/>
+                    </linearGradient>
+                </defs>
+                <rect width="600" height="600" fill="url(#bg)"/>
+                <circle cx="300" cy="235" r="125" fill="rgba(255,255,255,0.12)"/>
+                <text x="300" y="275" font-size="115" text-anchor="middle">${emoji}</text>
+                <text x="300" y="430" font-family="Cairo, Arial, sans-serif" font-size="28" font-weight="bold" text-anchor="middle" fill="#ffffff">${title}</text>
+                <text x="300" y="472" font-family="Cairo, Arial, sans-serif" font-size="19" text-anchor="middle" fill="#FFD580">${subtitle}</text>
+                <text x="300" y="555" font-family="Cairo, Arial, sans-serif" font-size="15" font-weight="bold" text-anchor="middle" fill="rgba(255,255,255,0.75)">JAWALI MALL • جوالي مول للجملة</text>
+            </svg>`;
+            return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+        }
+
+        // منتجات افتراضية بأسعار الجملة المتدرجة
+        const DEFAULT_PRODUCTS = [
+            {
+                id: 'ali-1',
+                name: 'آيفون 15 برو ماكس 256 جيجا - نسخة الشرق الأوسط',
+                category: 'إلكترونيات وهواتف',
+                price1: 580000,
+                price10: 555000,
+                price50: 530000,
+                moq: 1,
+                supplier: 'شركة جوالي للاتصالات والتجارة',
+                description: 'جديد ومغلف بالكرتون الأصلي مع ضمان الوكيل لمدة سنة. متوفر بجميع الألوان (تيتانيوم طبيعي، أزرق، أسود) مع شحن سريع ومؤمّن لكافة المحافظات.',
+                images: [
+                    createProductArt('iPhone 15 Pro Max', 'جملة ومفرد • ضمان الوكيل', '#1A2332', '#FF6A00', '📱'),
+                    createProductArt('تغليف المصنع الأصلي', 'شحن سريع ومؤمّن', '#0F172A', '#1E3A8A', '📦')
+                ]
+            },
+            {
+                id: 'ali-2',
+                name: 'سماعات بلوتوث لاسلكية TWS Pro - كرتون جملة',
+                category: 'إلكترونيات وهواتف',
+                price1: 12000,
+                price10: 9500,
+                price50: 7800,
+                moq: 5,
+                supplier: 'مصنع النور للإلكترونيات',
+                description: 'سماعات بلوتوث عالية النقاء تدعم عزل الضوضاء وشاشة رقمية لنسبة البطارية. مثالية للمحلات التجارية وموزعي الإكسسوارات.',
+                images: [
+                    createProductArt('سماعات TWS Pro', 'أسعار خاصة للموزعين', '#0066CC', '#1A2332', '🎧')
+                ]
+            },
+            {
+                id: 'ali-3',
+                name: 'طقم ملابس رجالية قطن 100% (تشكيلة موسمية)',
+                category: 'ملابس وأزياء',
+                price1: 18000,
+                price10: 14500,
+                price50: 12000,
+                moq: 10,
+                supplier: 'مجموعة الأندلس للمنسوجات',
+                description: 'خامة قطنية فاخرة عالية الجودة بمقاسات متعددة (M, L, XL, XXL) وألوان عصرية ثابتة مع الغسيل.',
+                images: [
+                    createProductArt('أزياء قطنية فاخرة', 'تشكيلة الجملة والمحلات', '#7C2D12', '#EA580C', '👔')
+                ]
+            },
+            {
+                id: 'ali-4',
+                name: 'خلاط ومحضرة طعام كهربائية 1200 واط متعددة السرعات',
+                category: 'أجهزة منزلية',
+                price1: 35000,
+                price10: 29000,
+                price50: 25500,
+                moq: 2,
+                supplier: 'البيت الحديث للأجهزة المنزلية',
+                description: 'محرك نحاسي قوي 1200 واط مع وعاء زجاجي مقاوم للكسر وشفرات ستانلس ستيل حادة وضمان لمدة عامين.',
+                images: [
+                    createProductArt('محضرة طعام 1200W', 'جودة صناعية وضمان سنتين', '#065F46', '#1A2332', '🍹')
+                ]
+            },
+            {
+                id: 'ali-5',
+                name: 'منظومة طاقة شمسية متكاملة (انفرتر + بطارية ليثيوم)',
+                category: 'معدات صناعية',
+                price1: 320000,
+                price10: 295000,
+                price50: 275000,
+                moq: 1,
+                supplier: 'مؤسسة الطاقة الذكية',
+                description: 'نظام طاقة شمسية عالي الكفاءة للمنازل والمحلات التجارية، يشمل انفرتر هجين وبطارية ليثيوم طويلة العمر.',
+                images: [
+                    createProductArt('منظومة طاقة شمسية', 'كفاءة عالية وعمر طويل', '#B45309', '#1E293B', '⚡')
+                ]
+            },
+            {
+                id: 'ali-6',
+                name: 'جهاز قياس ضغط الدم الرقمي الدقيق (معتمد طبياً)',
+                category: 'مستلزمات طبية',
+                price1: 16500,
+                price10: 13500,
+                price50: 11500,
+                moq: 5,
+                supplier: 'شركة الشفاء للتجهيزات الطبية',
+                description: 'جهاز قياس ضغط الدم ونبضات القلب بشاشة LCD كبيرة وذاكرة تخزين لـ 90 قراءة، مناسب للصيدليات والاستخدام المنزلي.',
+                images: [
+                    createProductArt('جهاز قياس الضغط', 'معتمد للصيدليات والمراكز', '#0369A1', '#0F172A', '🩺')
+                ]
+            }
+        ];
+
+        // المحافظ الإلكترونية اليمنية المرتبطة بالرقم 773629515
+        const DEFAULT_WALLETS = [
+            { id: 'jawali', name: 'محفظة جوالي (Jawali)', provider: 'المصرفية للتمويل الأصغر', phone: MERCHANT_PHONE, enabled: true, color: 'bg-amber-500', icon: 'fa-mobile-screen' },
+            { id: 'cash', name: 'محفظة كاش (Cash)', provider: 'تمكين للخدمات المالية', phone: MERCHANT_PHONE, enabled: true, color: 'bg-emerald-600', icon: 'fa-money-bill-wave' },
+            { id: 'mahfazati', name: 'محفظتي (Mahfazati)', provider: 'بنك التضامن الإسلامي', phone: MERCHANT_PHONE, enabled: true, color: 'bg-blue-700', icon: 'fa-wallet' },
+            { id: 'onecash', name: 'ون كاش (One Cash)', provider: 'المؤسسة المالية الإلكترونية', phone: MERCHANT_PHONE, enabled: true, color: 'bg-orange-600', icon: 'fa-bolt' },
+            { id: 'floosak', name: 'فلوسك (Floosak)', provider: 'بنك القاسمي', phone: MERCHANT_PHONE, enabled: true, color: 'bg-purple-600', icon: 'fa-coins' },
+            { id: 'kuraimi', name: 'بنك الكريمي (Kuraimi Bank)', provider: 'حاسب / إيداع مباشر', phone: MERCHANT_PHONE, enabled: true, color: 'bg-indigo-700', icon: 'fa-building-columns' }
+        ];
+
+        // حالة التطبيق
+        let products = [];
+        let wallets = [];
+        let cart = [];
+        let orders = [];
+        let rfqs = [];
+        let selectedCategory = 'الكل';
+        let currentCurrency = 'YER';
+        let activeView = 'store';
+        let currentModalProduct = null;
+        let uploadedImagesBuffer = [];
+        let receiptImageBuffer = null;
+
+        // تهيئة التطبيق عند التحميل
+        window.onload = function() {
+            loadStateFromStorage();
+            setupDragAndDrop();
+            renderAll();
+        };
+
+        function loadStateFromStorage() {
+            try {
+                const p = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+                products = p ? JSON.parse(p) : [...DEFAULT_PRODUCTS];
+                if (!p) saveProducts();
+
+                const w = localStorage.getItem(STORAGE_KEYS.WALLETS);
+                wallets = w ? JSON.parse(w) : [...DEFAULT_WALLETS];
+                if (!w) saveWallets();
+
+                const c = localStorage.getItem(STORAGE_KEYS.CART);
+                cart = c ? JSON.parse(c) : [];
+
+                const o = localStorage.getItem(STORAGE_KEYS.ORDERS);
+                orders = o ? JSON.parse(o) : [];
+
+                const r = localStorage.getItem(STORAGE_KEYS.RFQS);
+                rfqs = r ? JSON.parse(r) : [];
+            } catch (e) {
+                console.error("خطأ في تحميل البيانات:", e);
+                products = [...DEFAULT_PRODUCTS];
+                wallets = [...DEFAULT_WALLETS];
+            }
+        }
+
+        function saveProducts() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+            } catch (e) {
+                showToast("مساحة التخزين ممتلئة، يرجى تقليل حجم الصور المرفوعة.", "error");
+            }
+        }
+        function saveWallets() { localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets)); }
+        function saveCart() { localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart)); }
+        function saveOrders() { localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders)); }
+        function saveRfqs() { localStorage.setItem(STORAGE_KEYS.RFQS, JSON.stringify(rfqs)); }
+
+        // تنسيق الأسعار حسب العملة المختارة (YER أو USD)
+        function formatPrice(amountInYer) {
+            if (currentCurrency === 'USD') {
+                const usd = (amountInYer / USD_EXCHANGE_RATE).toFixed(2);
+                return `$${Number(usd).toLocaleString()}`;
+            }
+            return `${Number(amountInYer).toLocaleString()} ر.ي`;
+        }
+
+        function changeCurrency(curr) {
+            currentCurrency = curr;
+            renderAll();
+            if (currentModalProduct) updateModalPriceCalculation();
+            showToast(`تم تغيير العملة إلى ${curr === 'USD' ? 'الدولار الأمريكي ($)' : 'الريال اليمني (ر.ي)'}`);
+        }
+
+        // حساب سعر الوحدة بناءً على الكمية (أسعار الجملة المتدرجة)
+        function getUnitPriceForQty(product, qty) {
+            if (qty >= 50) return Number(product.price50);
+            if (qty >= 10) return Number(product.price10);
+            return Number(product.price1);
+        }
+
+        function renderAll() {
+            renderHeroCategories();
+            renderCategoryPills();
+            renderStorefront();
+            renderSellerProducts();
+            renderOrders();
+            renderRfqs();
+            renderWallets();
+            updateCartUI();
+        }
+
+        // =========================================================
+        // التنقل بين الواجهات
+        // =========================================================
+        function toggleMainView() {
+            switchView(activeView === 'store' ? 'seller' : 'store');
+        }
+
+        function switchView(viewName) {
+            activeView = viewName;
+            const storeView = document.getElementById('view-store');
+            const sellerView = document.getElementById('view-seller');
+            const topText = document.getElementById('top-role-text');
+
+            if (viewName === 'store') {
+                storeView.classList.remove('hidden');
+                sellerView.classList.add('hidden');
+                topText.textContent = 'مركز البائعين والموردين';
+                renderStorefront();
+            } else {
+                storeView.classList.add('hidden');
+                sellerView.classList.remove('hidden');
+                topText.textContent = 'العودة إلى واجهة المشتري';
+                renderSellerProducts();
+                renderOrders();
+                renderRfqs();
+                renderWallets();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function switchSellerTab(tabName) {
+            ['products', 'orders', 'rfqs', 'payments'].forEach(t => {
+                const sec = document.getElementById(`seller-tab-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabName) {
+                    sec.classList.remove('hidden');
+                    btn.className = "px-4 py-3.5 font-black text-xs sm:text-sm border-b-2 border-ali-orange text-ali-orange whitespace-nowrap flex items-center gap-2";
+                } else {
+                    sec.classList.add('hidden');
+                    btn.className = "px-4 py-3.5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-gray-600 hover:text-gray-900 whitespace-nowrap flex items-center gap-2";
+                }
+            });
+        }
+
+        // =========================================================
+        // واجهة المشتري (Storefront)
+        // =========================================================
+        function renderHeroCategories() {
+            const list = document.getElementById('hero-categories-list');
+            list.innerHTML = CATEGORIES_DATA.map(cat => {
+                const isSelected = selectedCategory === cat.name;
+                return `
+                <li>
+                    <button onclick="selectCategory('${cat.name}')" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
+                        isSelected ? 'bg-orange-50 text-ali-orange font-black' : 'text-gray-700 hover:bg-gray-50 hover:text-ali-orange'
+                    }">
+                        <span class="flex items-center gap-2.5">
+                            <i class="fa-solid ${cat.icon} w-4 text-center ${isSelected ? 'text-ali-orange' : 'text-gray-400'}"></i>
+                            <span>${cat.name}</span>
+                        </span>
+                        <i class="fa-solid fa-chevron-left text-[10px] text-gray-400"></i>
+                    </button>
+                </li>`;
+            }).join('');
+        }
+
+        function renderCategoryPills() {
+            const container = document.getElementById('category-pills');
+            const allCats = ['الكل', ...CATEGORIES_DATA.map(c => c.name)];
+            container.innerHTML = allCats.map(cat => {
+                const active = selectedCategory === cat;
+                return `<button onclick="selectCategory('${cat}')" class="px-3.5 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-all ${
+                    active ? 'bg-ali-orange text-white shadow-xs' : 'bg-white text-gray-700 border border-gray-200 hover:border-ali-orange'
+                }">${cat}</button>`;
+            }).join('');
+        }
+
+        function selectCategory(cat) {
+            selectedCategory = cat;
+            renderHeroCategories();
+            renderCategoryPills();
+            renderStorefront();
+        }
+
+        function handleSearchInput() {
+            if (activeView !== 'store') switchView('store');
+            renderStorefront();
+        }
+
+        function resetFilters() {
+            selectedCategory = 'الكل';
+            document.getElementById('global-search-input').value = '';
+            renderHeroCategories();
+            renderCategoryPills();
+            renderStorefront();
+        }
+
+        function renderStorefront() {
+            const query = document.getElementById('global-search-input').value.trim().toLowerCase();
+            const scope = document.getElementById('search-scope').value;
+            const grid = document.getElementById('products-grid');
+            const emptyState = document.getElementById('empty-store-state');
+
+            const filtered = products.filter(p => {
+                const matchCat = selectedCategory === 'الكل' || p.category === selectedCategory;
+                if (!query) return matchCat;
+                if (scope === 'suppliers') {
+                    return matchCat && (p.supplier && p.supplier.toLowerCase().includes(query));
+                }
+                return matchCat && (p.name.toLowerCase().includes(query) || (p.description && p.description.toLowerCase().includes(query)) || (p.supplier && p.supplier.toLowerCase().includes(query)));
+            });
+
+            document.getElementById('filtered-count-badge').textContent = `${filtered.length} منتج`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filtered.map(prod => {
+                const img = (prod.images && prod.images.length > 0) ? prod.images[0] : createProductArt(prod.name, 'جوالي مول', '#1A2332', '#FF6A00', '📦');
+                const photoCount = prod.images ? prod.images.length : 1;
+
+                return `
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-ali-orange/50 transition-all duration-200 flex flex-col justify-between group">
+                    <div>
+                        <!-- صورة المنتج -->
+                        <div class="relative aspect-square bg-gray-100 overflow-hidden cursor-pointer" onclick="openProductModal('${prod.id}')">
+                            <img src="${img}" alt="${prod.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            <span class="absolute top-2.5 right-2.5 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-xs flex items-center gap-1">
+                                <i class="fa-solid fa-shield-halved"></i> ضمان التجارة
+                            </span>
+                            ${photoCount > 1 ? `
+                                <span class="absolute bottom-2.5 left-2.5 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                                    <i class="fa-regular fa-images"></i> ${photoCount}
+                                </span>
+                            ` : ''}
+                        </div>
+
+                        <!-- تفاصيل المنتج على طراز علي بابا -->
+                        <div class="p-4">
+                            <h3 onclick="openProductModal('${prod.id}')" class="font-bold text-gray-900 text-xs sm:text-sm line-clamp-2 h-10 cursor-pointer hover:text-ali-orange leading-snug mb-2">
+                                ${prod.name}
+                            </h3>
+
+                            <!-- الأسعار المتدرجة -->
+                            <div class="bg-gray-50 rounded-lg p-2.5 mb-2.5 border border-gray-100">
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-base sm:text-lg font-black text-gray-900">${formatPrice(prod.price50)} - ${formatPrice(prod.price1)}</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-1 mt-1.5 pt-1.5 border-t border-gray-200/70 text-[10px] text-center">
+                                    <div>
+                                        <span class="text-gray-400 block">1-9 قطع</span>
+                                        <strong class="text-gray-800">${formatPrice(prod.price1)}</strong>
+                                    </div>
+                                    <div class="border-r border-gray-200">
+                                        <span class="text-gray-400 block">10-49</span>
+                                        <strong class="text-ali-orange">${formatPrice(prod.price10)}</strong>
+                                    </div>
+                                    <div class="border-r border-gray-200">
+                                        <span class="text-gray-400 block">50+ قطعة</span>
+                                        <strong class="text-emerald-700">${formatPrice(prod.price50)}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- الحد الأدنى للطلب MOQ واسم المورد -->
+                            <div class="flex items-center justify-between text-[11px] text-gray-600 mb-2">
+                                <span>الحد الأدنى (MOQ): <strong class="text-gray-900">${prod.moq || 1} قطعة</strong></span>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 text-[11px] pt-2 border-t border-gray-100">
+                                <span class="bg-blue-50 text-ali-blue font-black px-1.5 py-0.5 rounded text-[10px]">مورد موثوق ✓</span>
+                                <span class="text-gray-500 truncate font-semibold">${prod.supplier || 'جوالي مول'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- أزرار الإجراء -->
+                    <div class="px-4 pb-4 grid grid-cols-2 gap-2">
+                        <button onclick="addToCart('${prod.id}', ${prod.moq || 1})" class="py-2 px-2 bg-ali-orange hover:bg-ali-darkOrange text-white font-extrabold rounded-lg text-xs transition-colors flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-cart-plus"></i>
+                            <span>أضف للسلة</span>
+                        </button>
+                        <button onclick="openRfqForProduct('${prod.name}')" class="py-2 px-2 bg-white hover:bg-orange-50 text-ali-darkOrange border border-ali-orange font-extrabold rounded-lg text-xs transition-colors flex items-center justify-center gap-1">
+                            <i class="fa-regular fa-comment-dots"></i>
+                            <span>عرض سعر</span>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // =========================================================
+        // نافذة تفاصيل المنتج (Product Detail Modal)
+        // =========================================================
+        function openProductModal(productId) {
+            const prod = products.find(p => p.id === productId);
+            if (!prod) return;
+            currentModalProduct = prod;
+
+            document.getElementById('modal-prod-category').textContent = prod.category;
+            document.getElementById('modal-prod-name').textContent = prod.name;
+            document.getElementById('modal-prod-supplier').textContent = prod.supplier || 'مؤسسة جوالي مول';
+            document.getElementById('modal-prod-moq').textContent = `• الحد الأدنى للطلب: ${prod.moq || 1} قطعة`;
+            document.getElementById('modal-prod-desc').textContent = prod.description || 'لا توجد مواصفات إضافية.';
+
+            document.getElementById('modal-tier-1').textContent = formatPrice(prod.price1);
+            document.getElementById('modal-tier-10').textContent = formatPrice(prod.price10);
+            document.getElementById('modal-tier-50').textContent = formatPrice(prod.price50);
+
+            const qtyInput = document.getElementById('modal-qty-input');
+            qtyInput.min = prod.moq || 1;
+            qtyInput.value = prod.moq || 1;
+            updateModalPriceCalculation();
+
+            const imgs = (prod.images && prod.images.length > 0) ? prod.images : [createProductArt(prod.name, 'جوالي مول', '#1A2332', '#FF6A00', '📦')];
+            document.getElementById('modal-main-img').src = imgs[0];
+            document.getElementById('modal-thumbnails').innerHTML = imgs.map((src, i) => `
+                <button onclick="document.getElementById('modal-main-img').src='${src}'" class="w-16 h-16 rounded-lg overflow-hidden border-2 ${i === 0 ? 'border-ali-orange' : 'border-gray-200'} hover:border-ali-orange flex-shrink-0">
+                    <img src="${src}" class="w-full h-full object-cover">
+                </button>
+            `).join('');
+
+            document.getElementById('modal-add-cart-btn').onclick = () => {
+                const qty = parseInt(document.getElementById('modal-qty-input').value) || (prod.moq || 1);
+                addToCart(prod.id, qty);
+                closeProductModal();
+            };
+
+            document.getElementById('modal-rfq-btn').onclick = () => {
+                closeProductModal();
+                openRfqForProduct(prod.name);
+            };
+
+            document.getElementById('product-modal').classList.remove('hidden');
+        }
+
+        function adjustModalQty(delta) {
+            const input = document.getElementById('modal-qty-input');
+            const minQty = currentModalProduct ? (currentModalProduct.moq || 1) : 1;
+            let val = (parseInt(input.value) || minQty) + delta;
+            if (val < minQty) val = minQty;
+            input.value = val;
+            updateModalPriceCalculation();
+        }
+
+        function updateModalPriceCalculation() {
+            if (!currentModalProduct) return;
+            const qty = Math.max(1, parseInt(document.getElementById('modal-qty-input').value) || 1);
+            const unitPrice = getUnitPriceForQty(currentModalProduct, qty);
+            const total = unitPrice * qty;
+            document.getElementById('modal-calculated-total').textContent = `${formatPrice(unitPrice)} × ${qty} = ${formatPrice(total)}`;
+
+            // تمييز شريحة السعر المطبقة
+            ['tier-box-1', 'tier-box-10', 'tier-box-50'].forEach(id => document.getElementById(id).classList.remove('ring-2', 'ring-ali-orange'));
+            if (qty >= 50) document.getElementById('tier-box-50').classList.add('ring-2', 'ring-ali-orange');
+            else if (qty >= 10) document.getElementById('tier-box-10').classList.add('ring-2', 'ring-ali-orange');
+            else document.getElementById('tier-box-1').classList.add('ring-2', 'ring-ali-orange');
+        }
+
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+            currentModalProduct = null;
+        }
+
+        // =========================================================
+        // نظام طلب عروض الأسعار (RFQ System)
+        // =========================================================
+        function openRfqModal() {
+            document.getElementById('rfq-modal').classList.remove('hidden');
+        }
+
+        function openRfqForProduct(productName) {
+            document.getElementById('rfq-product-name').value = productName;
+            openRfqModal();
+        }
+
+        function closeRfqModal() {
+            document.getElementById('rfq-modal').classList.add('hidden');
+        }
+
+        function submitRfq(e) {
+            e.preventDefault();
+            const newRfq = {
+                id: 'RFQ-' + Math.floor(10000 + Math.random() * 90000),
+                date: new Date().toLocaleString('ar-YE'),
+                productName: document.getElementById('rfq-product-name').value.trim(),
+                quantity: parseInt(document.getElementById('rfq-quantity').value) || 1,
+                targetPrice: document.getElementById('rfq-target-price').value.trim() || 'غير محدد',
+                buyerName: document.getElementById('rfq-buyer-name').value.trim(),
+                buyerPhone: document.getElementById('rfq-buyer-phone').value.trim(),
+                notes: document.getElementById('rfq-notes').value.trim(),
+                status: 'بانتظار التسعير'
+            };
+
+            rfqs.unshift(newRfq);
+            saveRfqs();
+            renderRfqs();
+            e.target.reset();
+            closeRfqModal();
+            showToast("تم نشر طلب عرض الأسعار (RFQ) بنجاح! سيظهر في مركز البائعين.");
+        }
+
+        function renderRfqs() {
+            const list = document.getElementById('seller-rfqs-list');
+            document.getElementById('seller-rfqs-badge').textContent = rfqs.length;
+
+            if (rfqs.length === 0) {
+                list.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">لا توجد طلبات عروض أسعار (RFQs) حالياً.</div>`;
+                return;
+            }
+
+            list.innerHTML = rfqs.map(r => `
+                <div class="p-4 rounded-xl border border-gray-200 bg-gray-50/70 space-y-2">
+                    <div class="flex flex-wrap justify-between items-center gap-2 pb-2 border-b border-gray-200">
+                        <div class="flex items-center gap-2">
+                            <span class="font-black text-ali-blue text-xs">${r.id}</span>
+                            <span class="text-[11px] text-gray-400">• ${r.date}</span>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${
+                            r.status === 'تم إرسال التسعيرة' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }">${r.status}</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <div>
+                            <span class="text-gray-400 block">البضاعة المطلوبة:</span>
+                            <strong class="text-gray-900">${r.productName}</strong>
+                            <span class="block text-ali-orange font-bold">الكمية: ${r.quantity} قطعة</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block">بيانات المشتري:</span>
+                            <strong class="text-gray-900">${r.buyerName}</strong>
+                            <span class="block text-gray-600" dir="ltr">${r.buyerPhone}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block">السعر المستهدف والملاحظات:</span>
+                            <span class="font-bold text-gray-700 block">المستهدف: ${r.targetPrice}</span>
+                            <span class="text-gray-500">${r.notes || 'لا توجد ملاحظات'}</span>
+                        </div>
+                    </div>
+                    ${r.status !== 'تم إرسال التسعيرة' ? `
+                        <div class="pt-2 flex justify-end">
+                            <button onclick="markRfqQuoted('${r.id}')" class="px-3.5 py-1.5 bg-ali-blue hover:bg-blue-700 text-white text-xs font-extrabold rounded-lg">
+                                <i class="fa-solid fa-check ml-1"></i> تم التواصل وتقديم العرض
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function markRfqQuoted(rfqId) {
+            const item = rfqs.find(r => r.id === rfqId);
+            if (item) {
+                item.status = 'تم إرسال التسعيرة';
+                saveRfqs();
+                renderRfqs();
+                showToast("تم تحديث حالة طلب عرض السعر");
+            }
+        }
+
+        // =========================================================
+        // مركز البائعين: رفع الصور المتعددة وإدارة المنتجات
+        // =========================================================
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('drop-zone');
+            if (!dropZone) return;
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => {
+                dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+            ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.add('drag-active'), false));
+            ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('drag-active'), false));
+            dropZone.addEventListener('drop', e => handleFilesSelected(e.dataTransfer.files), false);
+        }
+
+        function handleFilesSelected(fileList) {
+            if (!fileList || fileList.length === 0) return;
+            const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+            if (files.length === 0) {
+                showToast("يرجى اختيار ملفات صور صالحة فقط.", "error");
+                return;
+            }
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    compressImage(ev.target.result, 750, 0.8, compressed => {
+                        uploadedImagesBuffer.push(compressed);
+                        renderUploadedPreviews();
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+            document.getElementById('image-file-input').value = '';
+        }
+
+        function compressImage(dataUrl, maxWidth, quality, callback) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                if (w > maxWidth) {
+                    h = Math.round((h * maxWidth) / w);
+                    w = maxWidth;
+                }
+                canvas.width = w;
+                canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                callback(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = () => callback(dataUrl);
+            img.src = dataUrl;
+        }
+
+        function renderUploadedPreviews() {
+            const container = document.getElementById('image-previews-container');
+            document.getElementById('uploaded-count-label').textContent = `${uploadedImagesBuffer.length} صور`;
+            container.innerHTML = uploadedImagesBuffer.map((src, idx) => `
+                <div class="relative aspect-square rounded-lg overflow-hidden border-2 ${idx === 0 ? 'border-ali-orange' : 'border-gray-200'} group bg-gray-100">
+                    <img src="${src}" class="w-full h-full object-cover">
+                    ${idx === 0 ? `<span class="absolute top-1 right-1 bg-ali-orange text-white text-[9px] font-black px-1.5 rounded">رئيسية</span>` : ''}
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                        ${idx !== 0 ? `<button type="button" onclick="setMainPreviewImage(${idx})" title="تعيين كرئيسية" class="w-6 h-6 rounded bg-amber-400 text-gray-900 text-xs flex items-center justify-center"><i class="fa-solid fa-star"></i></button>` : ''}
+                        <button type="button" onclick="removePreviewImage(${idx})" title="حذف" class="w-6 h-6 rounded bg-red-600 text-white text-xs flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setMainPreviewImage(idx) {
+            const [sel] = uploadedImagesBuffer.splice(idx, 1);
+            uploadedImagesBuffer.unshift(sel);
+            renderUploadedPreviews();
+        }
+
+        function removePreviewImage(idx) {
+            uploadedImagesBuffer.splice(idx, 1);
+            renderUploadedPreviews();
+        }
+
+        function handleProductSubmit(e) {
+            e.preventDefault();
+            if (uploadedImagesBuffer.length === 0) {
+                showToast("يرجى رفع صورة واحدة على الأقل للمنتج!", "error");
+                return;
+            }
+
+            const editId = document.getElementById('edit-product-id').value;
+            const productData = {
+                name: document.getElementById('prod-name').value.trim(),
+                category: document.getElementById('prod-category').value,
+                price1: parseFloat(document.getElementById('prod-price-1').value),
+                price10: parseFloat(document.getElementById('prod-price-10').value),
+                price50: parseFloat(document.getElementById('prod-price-50').value),
+                moq: parseInt(document.getElementById('prod-moq').value) || 1,
+                supplier: document.getElementById('prod-supplier').value.trim() || 'مؤسسة جوالي مول',
+                description: document.getElementById('prod-desc').value.trim(),
+                images: [...uploadedImagesBuffer]
+            };
+
+            if (editId) {
+                const idx = products.findIndex(p => p.id === editId);
+                if (idx !== -1) {
+                    products[idx] = { ...products[idx], ...productData };
+                    showToast("تم تحديث المنتج وأسعار الجملة بنجاح!");
+                }
+            } else {
+                products.unshift({ id: 'ali-' + Date.now(), ...productData });
+                showToast("تم نشر المنتج الجديد في جوالي مول!");
+            }
+
+            saveProducts();
+            resetProductForm();
+            renderSellerProducts();
+            renderStorefront();
+        }
+
+        function editProduct(productId) {
+            const prod = products.find(p => p.id === productId);
+            if (!prod) return;
+
+            document.getElementById('edit-product-id').value = prod.id;
+            document.getElementById('prod-name').value = prod.name;
+            document.getElementById('prod-category').value = prod.category;
+            document.getElementById('prod-price-1').value = prod.price1;
+            document.getElementById('prod-price-10').value = prod.price10;
+            document.getElementById('prod-price-50').value = prod.price50;
+            document.getElementById('prod-moq').value = prod.moq || 1;
+            document.getElementById('prod-supplier').value = prod.supplier || '';
+            document.getElementById('prod-desc').value = prod.description || '';
+
+            uploadedImagesBuffer = prod.images ? [...prod.images] : [];
+            renderUploadedPreviews();
+
+            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-ali-orange"></i> <span>تعديل المنتج</span>`;
+            document.getElementById('submit-product-btn').innerHTML = `<i class="fa-solid fa-floppy-disk"></i> <span>حفظ التعديلات</span>`;
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            document.getElementById('product-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteProduct(productId) {
+            products = products.filter(p => p.id !== productId);
+            cart = cart.filter(c => c.productId !== productId);
+            saveProducts();
+            saveCart();
+            renderSellerProducts();
+            renderStorefront();
+            updateCartUI();
+            showToast("تم حذف المنتج من الكتالوج");
+        }
+
+        function resetProductForm() {
+            document.getElementById('product-form').reset();
+            document.getElementById('edit-product-id').value = '';
+            uploadedImagesBuffer = [];
+            renderUploadedPreviews();
+            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-circle-plus text-ali-orange"></i> <span>إضافة منتج جديد للكتالوج</span>`;
+            document.getElementById('submit-product-btn').innerHTML = `<i class="fa-solid fa-check-circle"></i> <span>نشر المنتج في جوالي مول</span>`;
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        }
+
+        function renderSellerProducts() {
+            const list = document.getElementById('seller-products-list');
+            document.getElementById('seller-products-count').textContent = products.length;
+
+            if (products.length === 0) {
+                list.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">لا توجد منتجات حالياً. أضف أول منتج من النموذج المجاور.</div>`;
+                return;
+            }
+
+            list.innerHTML = products.map(prod => {
+                const img = (prod.images && prod.images.length > 0) ? prod.images[0] : '';
+                return `
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-gray-200 hover:border-ali-orange/40 bg-gray-50/50 transition-all">
+                    <div class="flex items-center gap-3">
+                        <img src="${img}" class="w-16 h-16 rounded-lg object-cover border border-gray-200 bg-white flex-shrink-0">
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-bold bg-orange-100 text-ali-darkOrange px-2 py-0.5 rounded">${prod.category}</span>
+                                <span class="text-[10px] text-gray-500 font-bold">MOQ: ${prod.moq || 1}</span>
+                                <span class="text-[10px] text-gray-400">• ${prod.images ? prod.images.length : 0} صور</span>
+                            </div>
+                            <h4 class="font-extrabold text-gray-900 text-xs sm:text-sm mt-1">${prod.name}</h4>
+                            <p class="text-[11px] font-bold text-gray-600 mt-0.5">
+                                1+: <span class="text-gray-900">${formatPrice(prod.price1)}</span> | 
+                                10+: <span class="text-ali-orange">${formatPrice(prod.price10)}</span> | 
+                                50+: <span class="text-emerald-700">${formatPrice(prod.price50)}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 self-end sm:self-center">
+                        <button onclick="editProduct('${prod.id}')" class="px-3 py-1.5 rounded-lg bg-white border border-gray-200 hover:border-ali-orange text-gray-800 text-xs font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-pen text-ali-orange"></i>
+                            <span>تعديل</span>
+                        </button>
+                        <button onclick="deleteProduct('${prod.id}')" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-trash"></i>
+                            <span>حذف</span>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // =========================================================
+        // السلة الذكية وعملية الدفع (Smart Wholesale Cart & Checkout)
+        // =========================================================
+        function addToCart(productId, qty = 1) {
+            const prod = products.find(p => p.id === productId);
+            if (!prod) return;
+            const addQty = Math.max(qty, prod.moq || 1);
+
+            const existing = cart.find(item => item.productId === productId);
+            if (existing) {
+                existing.qty += addQty;
+            } else {
+                cart.push({ productId, qty: addQty });
+            }
+            saveCart();
+            updateCartUI();
+            showToast(`تمت إضافة "${prod.name}" (${addQty} قطعة) إلى السلة`);
+        }
+
+        function updateCartQty(productId, delta) {
+            const idx = cart.findIndex(item => item.productId === productId);
+            if (idx === -1) return;
+            const prod = products.find(p => p.id === productId);
+            const minQty = prod ? (prod.moq || 1) : 1;
+
+            const newQty = cart[idx].qty + delta;
+            if (newQty < minQty) {
+                cart.splice(idx, 1);
+            } else {
+                cart[idx].qty = newQty;
+            }
+            saveCart();
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+            document.getElementById('desktop-cart-badge').textContent = totalItems;
+            document.getElementById('mobile-cart-badge').textContent = totalItems;
+
+            const container = document.getElementById('cart-items-container');
+            const footer = document.getElementById('cart-footer');
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16">
+                        <i class="fa-solid fa-cart-arrow-down text-4xl text-gray-300 mb-3"></i>
+                        <p class="font-bold text-gray-700 text-sm">سلة المشتريات فارغة</p>
+                        <p class="text-xs text-gray-400 mt-1">أضف منتجات الجملة أو التجزئة لبدء الطلب</p>
+                    </div>`;
+                footer.classList.add('hidden');
+                return;
+            }
+
+            footer.classList.remove('hidden');
+            let grandTotalYer = 0;
+
+            container.innerHTML = cart.map(item => {
+                const prod = products.find(p => p.id === item.productId);
+                if (!prod) return '';
+                const unitPrice = getUnitPriceForQty(prod, item.qty);
+                const lineTotal = unitPrice * item.qty;
+                grandTotalYer += lineTotal;
+                const img = (prod.images && prod.images.length > 0) ? prod.images[0] : '';
+
+                let tierBadge = '';
+                if (item.qty >= 50) tierBadge = '<span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 rounded">سعر الجملة (50+)</span>';
+                else if (item.qty >= 10) tierBadge = '<span class="text-[10px] bg-orange-100 text-ali-darkOrange font-bold px-1.5 rounded">خصم كمية (10+)</span>';
+
+                return `
+                <div class="flex items-center justify-between gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                    <img src="${img}" class="w-14 h-14 rounded-lg object-cover bg-white border">
+                    <div class="flex-grow">
+                        <h4 class="text-xs font-extrabold text-gray-900 line-clamp-1">${prod.name}</h4>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="text-[11px] font-bold text-gray-600">${formatPrice(unitPrice)} / قطعة</span>
+                            ${tierBadge}
+                        </div>
+                        <span class="text-xs font-black text-ali-orange block mt-0.5">${formatPrice(lineTotal)}</span>
+                    </div>
+                    <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1">
+                        <button onclick="updateCartQty('${prod.id}', 1)" class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-xs font-black">+</button>
+                        <span class="text-xs font-black px-1.5">${item.qty}</span>
+                        <button onclick="updateCartQty('${prod.id}', -1)" class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-xs font-black">-</button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            const formattedTotal = formatPrice(grandTotalYer);
+            document.getElementById('cart-total-display').textContent = formattedTotal;
+            document.getElementById('checkout-total-amount').textContent = formattedTotal;
+        }
+
+        function toggleCartDrawer(show) {
+            const drawer = document.getElementById('cart-drawer');
+            if (show) drawer.classList.remove('hidden');
+            else drawer.classList.add('hidden');
+        }
+
+        function openCheckoutModal() {
+            toggleCartDrawer(false);
+            const activeWallets = wallets.filter(w => w.enabled);
+            document.getElementById('checkout-wallets-list').innerHTML = activeWallets.map((w, i) => `
+                <label class="cursor-pointer">
+                    <input type="radio" name="selected-wallet" value="${w.name}" ${i === 0 ? 'checked' : ''} class="peer sr-only">
+                    <div class="p-2.5 rounded-xl border border-gray-200 peer-checked:border-ali-orange peer-checked:bg-orange-50 text-center transition-all">
+                        <i class="fa-solid ${w.icon} text-ali-orange text-sm mb-1 block"></i>
+                        <span class="text-[11px] font-extrabold text-gray-800 block leading-tight">${w.name.split('(')[0]}</span>
+                    </div>
+                </label>
+            `).join('');
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+        }
+
+        function handleReceiptUpload(files) {
+            if (!files || files.length === 0) return;
+            const file = files[0];
+            const reader = new FileReader();
+            reader.onload = e => {
+                compressImage(e.target.result, 600, 0.75, compressed => {
+                    receiptImageBuffer = compressed;
+                    document.getElementById('receipt-preview-img').src = compressed;
+                    document.getElementById('receipt-preview-box').classList.remove('hidden');
+                    document.getElementById('receipt-preview-box').classList.add('flex');
+                    document.getElementById('receipt-file-label').textContent = file.name;
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearReceiptUpload() {
+            receiptImageBuffer = null;
+            document.getElementById('receipt-file-input').value = '';
+            document.getElementById('receipt-preview-box').classList.add('hidden');
+            document.getElementById('receipt-preview-box').classList.remove('flex');
+            document.getElementById('receipt-file-label').textContent = 'إرفاق صورة السند';
+        }
+
+        function submitOrder(e) {
+            e.preventDefault();
+            const walletEl = document.querySelector('input[name="selected-wallet"]:checked');
+            const walletName = walletEl ? walletEl.value : 'محفظة جوالي (Jawali)';
+            const buyerName = document.getElementById('buyer-name').value.trim();
+            const buyerPhone = document.getElementById('buyer-phone').value.trim();
+            const transferRef = document.getElementById('transfer-ref').value.trim();
+
+            const orderItems = cart.map(item => {
+                const p = products.find(prod => prod.id === item.productId);
+                if (!p) return null;
+                const unitPrice = getUnitPriceForQty(p, item.qty);
+                return { name: p.name, qty: item.qty, unitPrice, lineTotal: unitPrice * item.qty };
+            }).filter(Boolean);
+
+            const totalYer = orderItems.reduce((sum, i) => sum + i.lineTotal, 0);
+
+            const newOrder = {
+                id: 'JM-' + Math.floor(100000 + Math.random() * 900000),
+                date: new Date().toLocaleString('ar-YE'),
+                buyerName,
+                buyerPhone,
+                walletName,
+                merchantPhone: MERCHANT_PHONE,
+                transferRef,
+                receiptImage: receiptImageBuffer,
+                items: orderItems,
+                totalFormatted: formatPrice(totalYer),
+                status: 'قيد المراجعة'
+            };
+
+            orders.unshift(newOrder);
+            saveOrders();
+
+            // تفريغ السلة
+            cart = [];
+            saveCart();
+            updateCartUI();
+            clearReceiptUpload();
+            e.target.reset();
+            closeCheckoutModal();
+            renderOrders();
+
+            // عرض الفاتورة الرسمية القابلة للطباعة
+            showInvoiceModal(newOrder);
+            showToast("تم تسجيل طلبك بنجاح! يمكنك طباعة الفاتورة الآن.");
+        }
+
+        function showInvoiceModal(order) {
+            document.getElementById('inv-order-id').textContent = `رقم الطلب: ${order.id}`;
+            document.getElementById('inv-date').textContent = order.date;
+            document.getElementById('inv-buyer-name').textContent = order.buyerName;
+            document.getElementById('inv-buyer-phone').textContent = order.buyerPhone;
+            document.getElementById('inv-wallet').textContent = order.walletName;
+            document.getElementById('inv-ref').textContent = order.transferRef;
+            document.getElementById('inv-total').textContent = order.totalFormatted;
+
+            document.getElementById('inv-items-body').innerHTML = order.items.map(i => `
+                <tr>
+                    <td class="p-2 font-bold text-gray-800">${i.name}</td>
+                    <td class="p-2 text-center font-bold">${i.qty}</td>
+                    <td class="p-2 text-left font-black text-gray-900">${formatPrice(i.lineTotal)}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('invoice-modal').classList.remove('hidden');
+        }
+
+        // =========================================================
+        // إدارة الطلبات والمحافظ في مركز البائعين
+        // =========================================================
+        function renderOrders() {
+            const list = document.getElementById('seller-orders-list');
+            document.getElementById('seller-orders-badge').textContent = orders.length;
+            const dot = document.getElementById('header-orders-dot');
+            if (orders.some(o => o.status === 'قيد المراجعة')) dot.classList.remove('hidden');
+            else dot.classList.add('hidden');
+
+            if (orders.length === 0) {
+                list.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">لا توجد طلبات واردة حتى الآن.</div>`;
+                return;
+            }
+
+            const statuses = ['قيد المراجعة', 'تم التأكيد', 'تم الشحن', 'مكتمل'];
+
+            list.innerHTML = orders.map(ord => `
+                <div class="p-4 rounded-xl border border-gray-200 bg-gray-50/70 space-y-3">
+                    <div class="flex flex-wrap justify-between items-center gap-2 pb-2.5 border-b border-gray-200">
+                        <div class="flex items-center gap-2">
+                            <span class="font-black text-gray-900 text-xs sm:text-sm">${ord.id}</span>
+                            <span class="text-[11px] text-gray-400">• ${ord.date}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-bold text-gray-500">تحديث الحالة:</span>
+                            <select onchange="updateOrderStatus('${ord.id}', this.value)" class="text-xs font-extrabold px-2.5 py-1 rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-ali-orange">
+                                ${statuses.map(st => `<option value="${st}" ${ord.status === st ? 'selected' : ''}>${st}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                        <div>
+                            <span class="text-gray-400 block">المشتري:</span>
+                            <strong class="text-gray-900">${ord.buyerName}</strong>
+                            <span class="block text-gray-600" dir="ltr">${ord.buyerPhone}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block">بيانات التحويل (إلى 773629515):</span>
+                            <strong class="text-ali-darkOrange">${ord.walletName}</strong>
+                            <span class="block text-gray-700">رقم العملية: <strong class="bg-white px-1.5 py-0.5 rounded border">${ord.transferRef}</strong></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block">الأصناف المطلوبة:</span>
+                            <ul class="font-bold text-gray-700 space-y-0.5">
+                                ${ord.items.map(i => `<li>• ${i.name} (×${i.qty})</li>`).join('')}
+                            </ul>
+                            <span class="block font-black text-emerald-700 text-sm mt-1">الإجمالي: ${ord.totalFormatted}</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-gray-200 flex flex-wrap justify-between items-center gap-2">
+                        <div>
+                            ${ord.receiptImage ? `
+                                <a href="${ord.receiptImage}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-ali-blue bg-blue-50 px-3 py-1 rounded-lg hover:bg-blue-100">
+                                    <i class="fa-solid fa-image"></i> عرض صورة سند التحويل
+                                </a>
+                            ` : `<span class="text-[11px] text-gray-400">بدون صورة سند مرفقة</span>`}
+                        </div>
+                        <button onclick='showInvoiceModal(${JSON.stringify(ord).replace(/'/g, "&apos;")})' class="text-xs font-bold text-gray-700 hover:text-ali-orange flex items-center gap-1">
+                            <i class="fa-solid fa-print"></i> عرض الفاتورة
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            const ord = orders.find(o => o.id === orderId);
+            if (ord) {
+                ord.status = newStatus;
+                saveOrders();
+                renderOrders();
+                showToast(`تم تحديث حالة الطلب ${orderId} إلى "${newStatus}"`);
+            }
+        }
+
+        function renderWallets() {
+            const grid = document.getElementById('wallets-grid');
+            grid.innerHTML = wallets.map(w => `
+                <div class="p-4 rounded-xl border ${w.enabled ? 'border-orange-200 bg-white shadow-xs' : 'border-gray-200 bg-gray-50 opacity-65'} transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="w-10 h-10 rounded-lg ${w.color} text-white flex items-center justify-center text-base">
+                                <i class="fa-solid ${w.icon}"></i>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" ${w.enabled ? 'checked' : ''} onchange="toggleWallet('${w.id}')" class="sr-only peer">
+                                <div class="w-10 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                            </label>
+                        </div>
+                        <h4 class="font-extrabold text-gray-900 text-sm">${w.name}</h4>
+                        <p class="text-[11px] text-gray-500">${w.provider}</p>
+                    </div>
+                    <div class="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block">الرقم المربوط</span>
+                            <span class="font-black text-sm text-gray-900 tracking-wider" dir="ltr">${w.phone}</span>
+                        </div>
+                        <button onclick="copyMerchantPhone()" class="text-xs font-bold text-ali-orange hover:underline">
+                            <i class="fa-regular fa-copy"></i> نسخ
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleWallet(walletId) {
+            const w = wallets.find(item => item.id === walletId);
+            if (w) {
+                w.enabled = !w.enabled;
+                saveWallets();
+                renderWallets();
+                showToast(`تم ${w.enabled ? 'تفعيل' : 'تعطيل'} ${w.name}`);
+            }
+        }
+
+        // =========================================================
+        // أدوات مساعدة: نسخ الرقم والإشعارات
+        // =========================================================
+        function copyMerchantPhone() {
+            const temp = document.createElement('input');
+            temp.value = MERCHANT_PHONE;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            showToast(`تم نسخ رقم الدفع المعتمد لـ جوالي مول: ${MERCHANT_PHONE}`);
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const isError = type === 'error';
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-xs font-bold animate-fade-in ${
+                isError ? 'bg-red-900 text-white border-red-700' : 'bg-[#1A2332] text-white border-ali-orange/50'
+            }`;
+            toast.innerHTML = `
+                <i class="fa-solid ${isError ? 'fa-circle-exclamation text-red-400' : 'fa-circle-check text-ali-orange'} text-base"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+    </script>
+</body>
+</html>
